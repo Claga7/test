@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 
@@ -9,6 +8,8 @@ interface DataPoint {
   category: string;
   value: number;
   connections?: number[];
+  x?: number;
+  y?: number;
 }
 
 const RadialChart = () => {
