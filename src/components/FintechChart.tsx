@@ -15,10 +15,8 @@ interface FintechStartup {
 
 const FintechChart = () => {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [metricType, setMetricType] = useState<'count' | 'funding'>('count');
-
-  // Dataset di esempio delle startup fintech
-  const startups: FintechStartup[] = [
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [startups, setStartups] = useState<FintechStartup[]>([
     { id: 1, name: "Revolut", country: "Regno Unito", foundingYear: 2015, funding: 916 },
     { id: 2, name: "Stripe", country: "Stati Uniti", foundingYear: 2010, funding: 2200 },
     { id: 3, name: "Klarna", country: "Svezia", foundingYear: 2005, funding: 1500 },
@@ -39,31 +37,56 @@ const FintechChart = () => {
     { id: 18, name: "Mercado Pago", country: "Argentina", foundingYear: 2003, funding: 750 },
     { id: 19, name: "Grab Financial", country: "Singapore", foundingYear: 2016, funding: 850 },
     { id: 20, name: "Toss", country: "Corea del Sud", foundingYear: 2013, funding: 410 },
-  ];
+  ]);
 
-  // Raggruppiamo per paese e calcoliamo le metriche
-  const getCountryData = () => {
-    const countryGroups = d3.group(startups, d => d.country);
-    const countryData: any[] = [];
-    let id = 1;
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-    countryGroups.forEach((companies, country) => {
-      const totalFunding = d3.sum(companies, d => d.funding);
-      const avgYear = d3.mean(companies, d => d.foundingYear) || 2010;
-      const count = companies.length;
-      
-      countryData.push({
-        id: id++,
-        country,
-        avgFoundingYear: avgYear,
-        totalFunding,
-        startupCount: count,
-        companies: companies.map(c => c.name).join(', '),
-        value: metricType === 'count' ? count : totalFunding
-      });
-    });
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        let data: any[];
+        
+        if (file.name.endsWith('.json')) {
+          data = JSON.parse(text);
+        } else if (file.name.endsWith('.csv')) {
+          // Simple CSV parsing
+          const lines = text.split('\n');
+          const headers = lines[0].split(',').map(h => h.trim());
+          data = lines.slice(1).filter(line => line.trim()).map((line, index) => {
+            const values = line.split(',').map(v => v.trim());
+            const obj: any = { id: index + 1 };
+            headers.forEach((header, i) => {
+              if (header.toLowerCase().includes('funding') || header.toLowerCase().includes('year')) {
+                obj[header] = parseInt(values[i]) || 0;
+              } else {
+                obj[header] = values[i] || '';
+              }
+            });
+            return obj;
+          });
+        } else {
+          throw new Error('Formato file non supportato');
+        }
 
-    return countryData;
+        // Map data to our interface
+        const mappedData: FintechStartup[] = data.map((item, index) => ({
+          id: item.id || index + 1,
+          name: item.name || item.Name || `Startup ${index + 1}`,
+          country: item.country || item.Country || item.paese || 'Unknown',
+          foundingYear: item.foundingYear || item.year || item.Year || item.anno || 2020,
+          funding: item.funding || item.Funding || item.finanziamento || 100
+        }));
+
+        setStartups(mappedData);
+      } catch (error) {
+        console.error('Errore nel caricamento del file:', error);
+        alert('Errore nel caricamento del file. Assicurati che sia un JSON o CSV valido.');
+      }
+    };
+    reader.readAsText(file);
   };
 
   useEffect(() => {
@@ -80,7 +103,43 @@ const FintechChart = () => {
 
     svg.attr("width", width).attr("height", height);
 
-    const countryData = getCountryData();
+    // Raggruppiamo per paese per le linee radiali
+    const countries = Array.from(new Set(startups.map(d => d.country)));
+    const angleStep = (2 * Math.PI) / countries.length;
+
+    // Creiamo un mapping paese -> angolo
+    const countryAngles = new Map();
+    countries.forEach((country, i) => {
+      countryAngles.set(country, i * angleStep);
+    });
+
+    // Raggruppiamo per paese/anno per calcolare il numero di startup
+    const yearCountryGroups = d3.group(startups, d => `${d.country}-${d.foundingYear}`);
+    const processedData: any[] = [];
+
+    yearCountryGroups.forEach((startupGroup, key) => {
+      const [country, year] = key.split('-');
+      const yearNum = parseInt(year);
+      const angle = countryAngles.get(country);
+      
+      // Calcola la distanza basata sull'anno
+      const yearDistance = ((2025 - yearNum) / 30) * radius;
+      const distance = Math.max(60, Math.min(radius * 0.9, yearDistance));
+      
+      // Per ogni startup in questo gruppo paese/anno, creiamo un punto
+      startupGroup.forEach((startup, index) => {
+        // Offset per evitare sovrapposizioni
+        const offsetAngle = angle + (index - (startupGroup.length - 1) / 2) * 0.05;
+        const offsetDistance = distance + (index - (startupGroup.length - 1) / 2) * 15;
+        
+        processedData.push({
+          ...startup,
+          x: centerX + Math.cos(offsetAngle - Math.PI/2) * offsetDistance,
+          y: centerY + Math.sin(offsetAngle - Math.PI/2) * offsetDistance,
+          groupSize: startupGroup.length // numero di startup nello stesso gruppo paese/anno
+        });
+      });
+    });
 
     // Creiamo i gruppi principali
     const mainGroup = svg.append("g");
@@ -103,7 +162,6 @@ const FintechChart = () => {
         .attr("stroke", "#e2e8f0")
         .attr("stroke-width", 1);
       
-      // Etichette anni
       gridGroup.append("text")
         .attr("x", centerX + r + 5)
         .attr("y", centerY)
@@ -112,9 +170,8 @@ const FintechChart = () => {
         .text(yearLabels[i-1]);
     }
 
-    // Linee radiali (una per ogni paese)
-    const angleStep = (2 * Math.PI) / countryData.length;
-    for (let i = 0; i < countryData.length; i++) {
+    // Linee radiali per ogni paese
+    countries.forEach((country, i) => {
       const angle = i * angleStep;
       gridGroup.append("line")
         .attr("x1", centerX)
@@ -136,55 +193,44 @@ const FintechChart = () => {
         .attr("font-size", "11px")
         .attr("font-weight", "bold")
         .attr("fill", "#374151")
-        .text(countryData[i].country);
-    }
-
-    // Posizionamento radiale dei punti
-    countryData.forEach((d, i) => {
-      const angle = i * angleStep;
-      // Distanza basata sull'anno di fondazione (2025 al centro, 1995 all'esterno)
-      const yearDistance = ((2025 - d.avgFoundingYear) / 30) * radius;
-      const distance = Math.max(60, Math.min(radius * 0.9, yearDistance));
-      
-      d.x = centerX + Math.cos(angle - Math.PI/2) * distance;
-      d.y = centerY + Math.sin(angle - Math.PI/2) * distance;
+        .text(country);
     });
 
-    // Scala per i colori
-    const colorScale = d3.scaleSequential(d3.interpolateTurbo)
-      .domain(d3.extent(countryData, d => d.value) as [number, number]);
+    // Scale per colore (numero di startup nello stesso gruppo) e dimensione (funding)
+    const maxGroupSize = d3.max(processedData, d => d.groupSize) || 1;
+    const colorScale = d3.scaleSequential(d3.interpolateBlues)
+      .domain([1, maxGroupSize]);
 
-    // Scala per la dimensione delle bolle
     const sizeScale = d3.scaleSqrt()
-      .domain(d3.extent(countryData, d => d.value) as [number, number])
-      .range([15, 60]);
+      .domain(d3.extent(processedData, d => d.funding) as [number, number])
+      .range([8, 50]);
 
-    // Disegnare linee dal centro ai nodi
-    countryData.forEach(d => {
+    // Linee dal centro ai nodi
+    processedData.forEach(d => {
       connectionsGroup.append("line")
         .attr("x1", centerX)
         .attr("y1", centerY)
-        .attr("x2", d.x!)
-        .attr("y2", d.y!)
+        .attr("x2", d.x)
+        .attr("y2", d.y)
         .attr("stroke", "#94a3b8")
-        .attr("stroke-width", 1)
-        .attr("opacity", 0.4);
+        .attr("stroke-width", 0.5)
+        .attr("opacity", 0.3);
     });
 
     // Disegnare i nodi
     const nodes = nodesGroup.selectAll(".node")
-      .data(countryData)
+      .data(processedData)
       .enter()
       .append("g")
       .attr("class", "node")
       .attr("transform", d => `translate(${d.x}, ${d.y})`);
 
     nodes.append("circle")
-      .attr("r", d => sizeScale(d.value))
-      .attr("fill", d => colorScale(d.value))
-      .attr("opacity", 0.7)
+      .attr("r", d => sizeScale(d.funding))
+      .attr("fill", d => colorScale(d.groupSize))
+      .attr("opacity", 0.8)
       .attr("stroke", "#ffffff")
-      .attr("stroke-width", 3);
+      .attr("stroke-width", 2);
 
     // Centro del grafico
     centerGroup.append("circle")
@@ -233,11 +279,11 @@ const FintechChart = () => {
         tooltip
           .style("visibility", "visible")
           .html(`
-            <strong>${d.country}</strong><br/>
-            Anno medio fondazione: ${Math.round(d.avgFoundingYear)}<br/>
-            Numero startup: ${d.startupCount}<br/>
-            Funding totale: $${d.totalFunding}M<br/>
-            <small>Startup: ${d.companies}</small>
+            <strong>${d.name}</strong><br/>
+            Paese: ${d.country}<br/>
+            Anno fondazione: ${d.foundingYear}<br/>
+            Funding: $${d.funding}M<br/>
+            Startup nello stesso gruppo: ${d.groupSize}
           `);
       })
       .on("mousemove", function(event) {
@@ -246,27 +292,31 @@ const FintechChart = () => {
           .style("left", (event.pageX + 10) + "px");
       })
       .on("mouseout", function() {
-        d3.select(this).select("circle").attr("opacity", 0.7);
+        d3.select(this).select("circle").attr("opacity", 0.8);
         tooltip.style("visibility", "hidden");
       });
 
-  }, [metricType]);
+  }, [startups]);
 
   return (
     <div className="w-full flex flex-col items-center">
-      <div className="mb-4 flex gap-4">
+      <div className="mb-4 flex gap-4 items-center">
         <Button 
-          onClick={() => setMetricType('count')}
-          variant={metricType === 'count' ? 'default' : 'outline'}
+          onClick={() => fileInputRef.current?.click()}
+          variant="outline"
         >
-          Numero Startup
+          Carica Dati
         </Button>
-        <Button 
-          onClick={() => setMetricType('funding')}
-          variant={metricType === 'funding' ? 'default' : 'outline'}
-        >
-          Funding Totale
-        </Button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,.csv"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+        <span className="text-sm text-gray-600">
+          Startup caricate: {startups.length}
+        </span>
       </div>
       
       <div className="bg-white rounded-lg shadow-xl p-8">
@@ -275,7 +325,7 @@ const FintechChart = () => {
         {/* Legenda */}
         <div className="mt-6 text-center">
           <h3 className="text-lg font-semibold text-slate-700 mb-4">
-            Startup Fintech per Paese
+            Startup Fintech Globali
           </h3>
           <div className="flex justify-center space-x-8 text-sm text-slate-600">
             <div className="flex items-center space-x-2">
@@ -287,9 +337,19 @@ const FintechChart = () => {
               <span>Esterno = 2000</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-6 h-3 rounded-full bg-gradient-to-r from-purple-500 to-red-500"></div>
-              <span>Dimensione = {metricType === 'count' ? 'N° Startup' : 'Funding ($M)'}</span>
+              <div className="w-6 h-3 rounded-full bg-gradient-to-r from-blue-100 to-blue-800"></div>
+              <span>Colore = N° Startup</span>
             </div>
+            <div className="flex items-center space-x-2">
+              <div className="flex space-x-1">
+                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+              </div>
+              <span>Dimensione = Funding</span>
+            </div>
+          </div>
+          <div className="mt-2 text-xs text-gray-500">
+            Carica un file JSON o CSV con campi: name, country, foundingYear, funding
           </div>
         </div>
       </div>
