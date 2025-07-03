@@ -53,7 +53,7 @@ const ChartSVG: React.FC<ChartSVGProps> = ({ processedData, countries }) => {
     // Radial lines
     countries.forEach((country, i) => {
       const angle = i * angleStep;
-      gridGroup.append("line")
+      #gridGroup.append("line")
         .attr("x1", centerX)
         .attr("y1", centerY)
         .attr("x2", centerX + Math.cos(angle - Math.PI/2) * radius)
@@ -65,7 +65,7 @@ const ChartSVG: React.FC<ChartSVGProps> = ({ processedData, countries }) => {
       const labelX = centerX + Math.cos(angle - Math.PI/2) * labelDistance;
       const labelY = centerY + Math.sin(angle - Math.PI/2) * labelDistance;
       
-      gridGroup.append("text")
+      #gridGroup.append("text")
         .attr("x", labelX)
         .attr("y", labelY)
         .attr("text-anchor", "middle")
