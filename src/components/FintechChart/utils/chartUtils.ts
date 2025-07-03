@@ -21,6 +21,7 @@ export const processChartData = (startups: FintechStartup[]): ProcessedStartup[]
   const yearCountryGroups = d3.group(startups, d => `${d.country}-${d.foundingYear}`);
   const processedData: ProcessedStartup[] = [];
 
+  let groupId = 1;
   yearCountryGroups.forEach((startupGroup, key) => {
     const [country, year] = key.split('-');
     const yearNum = parseInt(year);
@@ -38,7 +39,7 @@ export const processChartData = (startups: FintechStartup[]): ProcessedStartup[]
     const groupName = `${country} ${yearNum} (${startupCount} startup)`;
     
     processedData.push({
-      id: key,
+      id: groupId++,
       name: groupName,
       country: country,
       foundingYear: yearNum,
