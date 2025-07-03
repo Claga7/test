@@ -19,11 +19,11 @@ export const useFileUpload = (onDataLoaded: (data: FintechStartup[]) => void) =>
           data = JSON.parse(text);
         } else if (file.name.endsWith('.csv')) {
           const lines = text.split('\n');
-          const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+          const headers = lines[0].split(';').map(h => h.trim().replace(/"/g, ''));
           console.log('CSV Headers:', headers);
           
           data = lines.slice(1).filter(line => line.trim()).map((line, index) => {
-            const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+            const values = line.split(';').map(v => v.trim().replace(/"/g, ''));
             const obj: any = { id: index + 1 };
             headers.forEach((header, i) => {
               obj[header] = values[i] || '';
