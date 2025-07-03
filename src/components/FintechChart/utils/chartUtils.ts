@@ -17,6 +17,7 @@ export const processChartData = (startups: FintechStartup[]): ProcessedStartup[]
     countryAngles.set(country, i * angleStep);
   });
 
+  // Raggruppa per anno e paese, aggregando funding e contando le startup
   const yearCountryGroups = d3.group(startups, d => `${d.country}-${d.foundingYear}`);
   const processedData: ProcessedStartup[] = [];
 
@@ -25,22 +26,30 @@ export const processChartData = (startups: FintechStartup[]): ProcessedStartup[]
     const yearNum = parseInt(year);
     const angle = countryAngles.get(country);
     
+    // Calcola funding totale aggregato per il gruppo
+    const totalFunding = d3.sum(startupGroup, d => d.funding);
+    const startupCount = startupGroup.length;
+    
+    // Calcola la distanza dal centro basata sull'anno
     const yearDistance = ((2025 - yearNum) / 30) * radius;
     const distance = Math.max(60, Math.min(radius * 0.9, yearDistance));
     
-    startupGroup.forEach((startup, index) => {
-      const offsetAngle = angle + (index - (startupGroup.length - 1) / 2) * 0.05;
-      const offsetDistance = distance + (index - (startupGroup.length - 1) / 2) * 15;
-      
-      processedData.push({
-        ...startup,
-        x: centerX + Math.cos(offsetAngle - Math.PI/2) * offsetDistance,
-        y: centerY + Math.sin(offsetAngle - Math.PI/2) * offsetDistance,
-        groupSize: startupGroup.length
-      });
+    // Crea un unico punto per il gruppo aggregato
+    const groupName = `${country} ${yearNum} (${startupCount} startup)`;
+    
+    processedData.push({
+      id: key,
+      name: groupName,
+      country: country,
+      foundingYear: yearNum,
+      funding: totalFunding,
+      x: centerX + Math.cos(angle - Math.PI/2) * distance,
+      y: centerY + Math.sin(angle - Math.PI/2) * distance,
+      groupSize: startupCount
     });
   });
 
+  console.log('Processed aggregated data:', processedData.slice(0, 10));
   return processedData;
 };
 

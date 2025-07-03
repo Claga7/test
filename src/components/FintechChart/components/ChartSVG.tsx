@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import { ProcessedStartup } from '@/types/fintech';
@@ -76,14 +75,19 @@ const ChartSVG: React.FC<ChartSVGProps> = ({ processedData, countries }) => {
         .text(country);
     });
 
-    // Scales
+    // Scale aggiornate per i dati aggregati
     const maxGroupSize = d3.max(processedData, d => d.groupSize) || 1;
     const colorScale = d3.scaleSequential(d3.interpolateBlues)
       .domain([1, maxGroupSize]);
 
+    // Scala dimensioni basata sul funding aggregato
+    const fundingExtent = d3.extent(processedData, d => d.funding) as [number, number];
     const sizeScale = d3.scaleSqrt()
-      .domain(d3.extent(processedData, d => d.funding) as [number, number])
-      .range([8, 50]);
+      .domain(fundingExtent)
+      .range([12, 80]); // Range più ampio per evidenziare le differenze
+
+    console.log('Funding extent:', fundingExtent);
+    console.log('Max group size:', maxGroupSize);
 
     // Connection lines
     processedData.forEach(d => {
@@ -139,7 +143,7 @@ const ChartSVG: React.FC<ChartSVGProps> = ({ processedData, countries }) => {
       .attr("font-size", "10px")
       .text("2025");
 
-    // Tooltip
+    // Tooltip aggiornato per dati aggregati
     const tooltip = d3.select("body").append("div")
       .attr("class", "fintech-tooltip")
       .style("position", "absolute")
@@ -159,11 +163,10 @@ const ChartSVG: React.FC<ChartSVGProps> = ({ processedData, countries }) => {
         tooltip
           .style("visibility", "visible")
           .html(`
-            <strong>${d.name}</strong><br/>
-            Paese: ${d.country}<br/>
-            Anno fondazione: ${d.foundingYear}<br/>
-            Funding: $${d.funding}M<br/>
-            Startup nello stesso gruppo: ${d.groupSize}
+            <strong>${d.country} - ${d.foundingYear}</strong><br/>
+            Numero startup: ${d.groupSize}<br/>
+            Funding totale: $${d.funding.toFixed(1)}M<br/>
+            Funding medio: $${(d.funding/d.groupSize).toFixed(1)}M
           `);
       })
       .on("mousemove", function(event) {
