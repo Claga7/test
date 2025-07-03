@@ -36,10 +36,10 @@ export const useFileUpload = (onDataLoaded: (data: FintechStartup[]) => void) =>
 
         const mappedData: FintechStartup[] = data.map((item, index) => ({
           id: item.id || index + 1,
-          name: item.name || item.Name || `Startup ${index + 1}`,
-          country: item.country || item.Country || item.paese || 'Unknown',
-          foundingYear: item.foundingYear || item.year || item.Year || item.anno || 2020,
-          funding: item.funding || item.Funding || item.finanziamento || 100
+          name: item.name || item.Name || item.Company || `Startup ${index + 1}`,
+          country: item['HQ Country/Territory/Region'] || item.country || item.Country || 'Unknown',
+          foundingYear: parseInt(item['Year Founded']) || item.foundingYear || item.year || 2020,
+          funding: parseFloat(item['Total Raised']?.replace(/[$,]/g, '')) || item.funding || 100
         }));
 
         onDataLoaded(mappedData);
