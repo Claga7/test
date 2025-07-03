@@ -31,8 +31,8 @@ export const processChartData = (startups: FintechStartup[]): ProcessedStartup[]
     const totalFunding = d3.sum(startupGroup, d => d.funding);
     const startupCount = startupGroup.length;
     
-    // Calcola la distanza dal centro basata sull'anno
-    const yearDistance = ((2025 - yearNum) / 30) * radius;
+    // Calcola la distanza dal centro basata sull'anno (2025 centro, 2021 bordi)
+    const yearDistance = ((2025 - yearNum) / 4) * radius;
     const distance = Math.max(60, Math.min(radius * 0.9, yearDistance));
     
     // Crea un unico punto per il gruppo aggregato

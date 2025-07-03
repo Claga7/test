@@ -31,9 +31,9 @@ const ChartSVG: React.FC<ChartSVGProps> = ({ processedData, countries }) => {
     // Grid
     const gridGroup = mainGroup.append("g").attr("class", "grid").style("opacity", 0.3);
     
-    const yearLabels = [2000, 2005, 2010, 2015, 2020];
-    for (let i = 1; i <= 5; i++) {
-      const r = (radius / 5) * i;
+    const yearLabels = [2024, 2023, 2022, 2021];
+    for (let i = 1; i <= 4; i++) {
+      const r = (radius / 4) * i;
       gridGroup.append("circle")
         .attr("cx", centerX)
         .attr("cy", centerY)
