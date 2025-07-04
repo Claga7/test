@@ -48,8 +48,8 @@ const WorldMap: React.FC<WorldMapProps> = ({ countryData }) => {
       .range(["#F1EEEA", "#21BF61"])
       .interpolate(d3.interpolateHcl);
 
-    // Load and render world map
-    d3.json("https://cdn.jsdelivr.net/npm/world-atlas@3/countries-110m.json").then((world: any) => {
+    // Load and render world map using a more reliable CDN
+    d3.json("https://raw.githubusercontent.com/topojson/world-atlas/master/countries-110m.json").then((world: any) => {
       const countries = feature(world, world.objects.countries) as any;
 
       const mainGroup = svg.append("g");
