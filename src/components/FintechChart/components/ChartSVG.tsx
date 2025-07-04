@@ -50,35 +50,25 @@ const ChartSVG: React.FC<ChartSVGProps> = ({ processedData, countries }) => {
         .text(yearLabels[i-1]);
     }
 
-    // Radial lines
+    // Radial lines (without country labels)
     countries.forEach((country, i) => {
       const angle = i * angleStep;
-      #gridGroup.append("line")
+      gridGroup.append("line")
         .attr("x1", centerX)
         .attr("y1", centerY)
         .attr("x2", centerX + Math.cos(angle - Math.PI/2) * radius)
         .attr("y2", centerY + Math.sin(angle - Math.PI/2) * radius)
         .attr("stroke", "#e2e8f0")
         .attr("stroke-width", 0.5);
-      
-      const labelDistance = radius + 30;
-      const labelX = centerX + Math.cos(angle - Math.PI/2) * labelDistance;
-      const labelY = centerY + Math.sin(angle - Math.PI/2) * labelDistance;
-      
-      #gridGroup.append("text")
-        .attr("x", labelX)
-        .attr("y", labelY)
-        .attr("text-anchor", "middle")
-        .attr("font-size", "11px")
-        .attr("font-weight", "bold")
-        .attr("fill", "#374151")
-        .text(country);
     });
 
-    // Scale aggiornate per i dati aggregati
+    // BCG Color palette
     const maxGroupSize = d3.max(processedData, d => d.groupSize) || 1;
-    const colorScale = d3.scaleSequential(d3.interpolateBlues)
-      .domain([1, maxGroupSize]);
+    const bcgColors = ["#DCF9E3", "#A8F0B8", "#21BF61", "#197A56", "#0E3E1B"];
+    const colorScale = d3.scaleLinear<string>()
+      .domain([1, maxGroupSize])
+      .range(["#DCF9E3", "#197A56"])
+      .interpolate(d3.interpolateHcl);
 
     // Scala dimensioni basata sul funding aggregato
     const fundingExtent = d3.extent(processedData, d => d.funding) as [number, number];
@@ -121,7 +111,7 @@ const ChartSVG: React.FC<ChartSVGProps> = ({ processedData, countries }) => {
       .attr("cx", centerX)
       .attr("cy", centerY)
       .attr("r", 50)
-      .attr("fill", "#1e40af")
+      .attr("fill", "#21BF61")
       .attr("opacity", 0.9)
       .attr("stroke", "#ffffff")
       .attr("stroke-width", 4);
