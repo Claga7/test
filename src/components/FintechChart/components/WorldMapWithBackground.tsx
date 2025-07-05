@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
-import { CountryData } from '../utils/mapUtils';
+import { CountryData, getCountryCode } from '../utils/mapUtils';
 
 interface WorldMapWithBackgroundProps {
   countryData: CountryData[];
@@ -33,43 +33,52 @@ const WorldMapWithBackground: React.FC<WorldMapWithBackgroundProps> = ({ country
       .range(["#DCF9E3", "#197A56"])
       .interpolate(d3.interpolateHcl);
 
-    // Country positions (more precise)
+    // Country positions (more precise) - support both Italian and English names
     const countryPositions: Record<string, [number, number]> = {
+      // Italian names
       'Stati Uniti': [250, 180],
-      'United States of America': [250, 180],
       'Regno Unito': [500, 140],
-      'United Kingdom': [500, 140],
       'Cina': [750, 200],
-      'China': [750, 200],
       'Brasile': [350, 350],
-      'Brazil': [350, 350],
       'Svezia': [530, 100],
-      'Sweden': [530, 100],
       'Germania': [520, 160],
-      'Germany': [520, 160],
       'Francia': [480, 180],
-      'France': [480, 180],
       'Italia': [520, 200],
-      'Italy': [520, 200],
       'Spagna': [460, 220],
+      'Giappone': [850, 200],
+      'Corea del Sud': [820, 220],
+      'Svizzera': [510, 170],
+      'Norvegia': [520, 80],
+      'Danimarca': [520, 120],
+      'Finlandia': [560, 80],
+      'Paesi Bassi': [500, 150],
+      // English names
+      'United States of America': [250, 180],
+      'United States': [250, 180],
+      'USA': [250, 180],
+      'US': [250, 180],
+      'United Kingdom': [500, 140],
+      'UK': [500, 140],
+      'Britain': [500, 140],
+      'Great Britain': [500, 140],
+      'China': [750, 200],
+      'Brazil': [350, 350],
+      'Sweden': [530, 100],
+      'Germany': [520, 160],
+      'France': [480, 180],
+      'Italy': [520, 200],
       'Spain': [460, 220],
       'Canada': [200, 120],
       'Australia': [800, 420],
-      'Giappone': [850, 200],
       'Japan': [850, 200],
-      'Corea del Sud': [820, 220],
       'South Korea': [820, 220],
+      'Korea': [820, 220],
       'India': [680, 250],
       'Singapore': [750, 320],
-      'Svizzera': [510, 170],
       'Switzerland': [510, 170],
-      'Norvegia': [520, 80],
       'Norway': [520, 80],
-      'Danimarca': [520, 120],
       'Denmark': [520, 120],
-      'Finlandia': [560, 80],
       'Finland': [560, 80],
-      'Paesi Bassi': [500, 150],
       'Netherlands': [500, 150]
     };
 
@@ -150,7 +159,13 @@ const WorldMapWithBackground: React.FC<WorldMapWithBackgroundProps> = ({ country
 
     // Draw country circles
     countryData.forEach(country => {
-      const position = countryPositions[country.country];
+      let position = countryPositions[country.country];
+      
+      // If not found, try with normalized country name
+      if (!position) {
+        const normalizedName = getCountryCode(country.country);
+        position = countryPositions[normalizedName];
+      }
       
       if (position) {
         const [x, y] = position;

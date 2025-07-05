@@ -40,6 +40,7 @@ export const processMapData = (startups: FintechStartup[]): CountryData[] => {
 // Country name mapping for consistent geography data
 export const getCountryCode = (countryName: string): string => {
   const countryMapping: Record<string, string> = {
+    // Italian to English mapping
     'Stati Uniti': 'United States of America',
     'Regno Unito': 'United Kingdom',
     'Paesi Bassi': 'Netherlands',
@@ -59,7 +60,16 @@ export const getCountryCode = (countryName: string): string => {
     'Svizzera': 'Switzerland',
     'Norvegia': 'Norway',
     'Danimarca': 'Denmark',
-    'Finlandia': 'Finland'
+    'Finlandia': 'Finland',
+    // English variants to standard forms
+    'United States': 'United States of America',
+    'USA': 'United States of America',
+    'US': 'United States of America',
+    'UK': 'United Kingdom',
+    'Britain': 'United Kingdom',
+    'Great Britain': 'United Kingdom',
+    'South Korea': 'South Korea',
+    'Korea': 'South Korea'
   };
 
   return countryMapping[countryName] || countryName;
