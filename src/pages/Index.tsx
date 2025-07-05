@@ -1,6 +1,6 @@
 
 import FintechChart from "@/components/FintechChart";
-import BubbleMap from "@/components/FintechChart/components/BubbleMap";
+import SimpleWorldMap from "@/components/FintechChart/components/SimpleWorldMap";
 import { useMapData } from "@/components/FintechChart/hooks/useMapData";
 import { useState } from "react";
 import { FintechStartup } from "@/types/fintech";
@@ -41,7 +41,7 @@ const Index = () => {
               Le dimensioni dei paesi sono proporzionali al funding totale, l'intensità del colore rappresenta il numero di startup.
             </p>
             <div className="flex justify-center">
-              <BubbleMap countryData={countryData} />
+              <SimpleWorldMap countryData={countryData} />
             </div>
           </div>
         </div>
